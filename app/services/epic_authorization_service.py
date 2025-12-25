@@ -83,43 +83,69 @@ class EpicAuthorization:
             email_input = self.page.locator("#email")
             await email_input.clear()
             await email_input.type(settings.EPIC_EMAIL)
+            logger.debug(f"Email inputted: {settings.EPIC_EMAIL}")
+
+            #等待2秒
+            await asyncio.sleep(2)
 
             # 2. 点击继续按钮
             await self.page.click("#continue")
+            logger.debug("Continue button clicked")
+
+            #等待2秒
+            await asyncio.sleep(2)
 
             # 3. 输入密码
             password_input = self.page.locator("#password")
             await password_input.clear()
             await password_input.type(settings.EPIC_PASSWORD.get_secret_value())
+            logger.debug("Password inputted")
+
+            #等待2秒
+            await asyncio.sleep(2)
 
             # 4. 点击登录按钮，触发人机挑战值守监听器
             # Active hCaptcha checkbox
             await self.page.click("#sign-in")
-
-            # Active hCaptcha challenge
-            await agent.wait_for_challenge()
+            logger.debug("Login button clicked")
 
             # 5. 处理 2FA OTP（如果启用）
             if settings.EPIC_TOTP_SECRET:
                 try:
-                    # 等待 OTP 输入框出现
-                    otp_input = self.page.locator("#code")
-                    await expect(otp_input).to_be_visible(timeout=5000)
+                    # 等待页面响应和OTP输入框出现
+                    await asyncio.sleep(3)
                     
                     # 使用 TOTP 密钥生成验证码
                     totp = pyotp.TOTP(settings.EPIC_TOTP_SECRET)
                     otp_code = totp.now()
                     logger.debug(f"Generated OTP code: {otp_code}")
                     
-                    # 输入 OTP 验证码
-                    await otp_input.clear()
-                    await otp_input.type(otp_code)
+                    # Epic Games 使用6个独立的输入框，每个输入框只能输入1位数字
+                    # 等待第一个输入框出现
+                    first_input = self.page.locator('input[name="code-input-0"]')
+                    await expect(first_input).to_be_visible(timeout=15000)
+                    
+                    # 将6位验证码分别输入到6个输入框中
+                    for i, digit in enumerate(otp_code):
+                        input_locator = self.page.locator(f'input[name="code-input-{i}"]')
+                        await input_locator.click()
+                        await input_locator.fill(digit)
+                        logger.debug(f"OTP digit {i} inputted: {digit}")
+                    
+                    logger.debug("All OTP digits inputted")
+
+                    # 等待2秒让页面处理
+                    await asyncio.sleep(2)
                     
                     # 点击继续按钮
                     await self.page.click("#continue")
                     logger.debug("OTP submitted")
                 except Exception as otp_err:
                     logger.warning(f"OTP handling failed or not required: {otp_err}")
+
+            # Active hCaptcha challenge
+            await agent.wait_for_challenge()
+            logger.debug("hCaptcha challenge solved")
 
             # Wait for the page to redirect
             await asyncio.wait_for(self._is_login_success_signal.get(), timeout=60)
