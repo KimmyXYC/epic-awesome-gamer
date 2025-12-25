@@ -96,6 +96,11 @@ class EpicSettings(AgentConfig):
         description="Telegram Message Thread ID (optional, for topic groups)",
     )
 
+    TG_API_BASE_URL: str = Field(
+        default="https://api.telegram.org",
+        description="Telegram API base URL (default: https://api.telegram.org)",
+    )
+
     @property
     def user_data_dir(self) -> Path:
         target_ = USER_DATA_DIR.joinpath(self.EPIC_EMAIL)

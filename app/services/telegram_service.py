@@ -18,6 +18,7 @@ class TelegramNotifier:
         self.bot_token = settings.TG_BOT_TOKEN
         self.chat_id = settings.TG_CHAT_ID
         self.message_thread_id = settings.TG_MESSAGE_THREAD_ID
+        self.api_base_url = settings.TG_API_BASE_URL
         self.enabled = bool(self.bot_token and self.chat_id)
 
     def _send_message(self, text: str) -> bool:
@@ -35,7 +36,7 @@ class TelegramNotifier:
             return False
 
         try:
-            url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
+            url = f"{self.api_base_url}/bot{self.bot_token}/sendMessage"
             payload = {
                 "chat_id": self.chat_id,
                 "text": text,
