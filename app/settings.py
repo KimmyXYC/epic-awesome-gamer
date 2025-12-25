@@ -37,6 +37,11 @@ class EpicSettings(AgentConfig):
         description=" Epic 游戏密码，需要关闭多步验证",
     )
 
+    EPIC_TOTP_SECRET: str | None = Field(
+        default_factory=lambda: os.getenv("EPIC_TOTP_SECRET"),
+        description="Epic 游戏账号的 TOTP 密钥，用于生成两步验证码",
+    )
+
     DISABLE_BEZIER_TRAJECTORY: bool = Field(
         default=True, description="是否关闭贝塞尔曲线轨迹模拟，默认关闭，直接使用 Camoufox 的特性"
     )
@@ -74,6 +79,22 @@ class EpicSettings(AgentConfig):
     # APPRISE_SERVERS: str | None = Field(
     #     default="", description="System notification by Apprise\nhttps://github.com/caronc/apprise"
     # )
+
+    # Telegram notification settings
+    TG_BOT_TOKEN: str | None = Field(
+        default_factory=lambda: os.getenv("TG_BOT_TOKEN"),
+        description="Telegram Bot Token for sending notifications",
+    )
+
+    TG_CHAT_ID: str | None = Field(
+        default_factory=lambda: os.getenv("TG_CHAT_ID"),
+        description="Telegram Chat ID for sending notifications",
+    )
+
+    TG_MESSAGE_THREAD_ID: str | None = Field(
+        default_factory=lambda: os.getenv("TG_MESSAGE_THREAD_ID"),
+        description="Telegram Message Thread ID (optional, for topic groups)",
+    )
 
     @property
     def user_data_dir(self) -> Path:

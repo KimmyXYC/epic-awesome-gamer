@@ -18,6 +18,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt
 
 from models import OrderItem, Order
 from models import PromotionGame
+from services.telegram_service import telegram_notifier
 from settings import settings, RUNTIME_DIR
 
 URL_CLAIM = "https://store.epicgames.com/en-US/free-games"
@@ -384,5 +385,13 @@ class EpicGames:
         try:
             await self.page.wait_for_url(URL_CART_SUCCESS)
             logger.success("🎉 Successfully collected all weekly games")
+            
+            # Send Telegram notification for successful claims
+            for promotion in promotions:
+                telegram_notifier.notify_game_claimed(promotion.title, success=True, url=promotion.url)
         except TimeoutError:
             logger.warning("Failed to collect all weekly games")
+            
+            # Send Telegram notification for failed claims
+            for promotion in promotions:
+                telegram_notifier.notify_game_claimed(promotion.title, success=False, url=promotion.url)

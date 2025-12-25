@@ -10,10 +10,12 @@ import json
 import time
 from contextlib import suppress
 
+import pyotp
 from hcaptcha_challenger.agent import AgentV
 from loguru import logger
 from playwright.async_api import expect, Page, Response
 
+from services.telegram_service import telegram_notifier
 from settings import SCREENSHOTS_DIR, settings
 
 URL_CLAIM = "https://store.epicgames.com/en-US/free-games"
@@ -97,6 +99,28 @@ class EpicAuthorization:
             # Active hCaptcha challenge
             await agent.wait_for_challenge()
 
+            # 5. 处理 2FA OTP（如果启用）
+            if settings.EPIC_TOTP_SECRET:
+                try:
+                    # 等待 OTP 输入框出现
+                    otp_input = self.page.locator("#code")
+                    await expect(otp_input).to_be_visible(timeout=5000)
+                    
+                    # 使用 TOTP 密钥生成验证码
+                    totp = pyotp.TOTP(settings.EPIC_TOTP_SECRET)
+                    otp_code = totp.now()
+                    logger.debug(f"Generated OTP code: {otp_code}")
+                    
+                    # 输入 OTP 验证码
+                    await otp_input.clear()
+                    await otp_input.type(otp_code)
+                    
+                    # 点击继续按钮
+                    await self.page.click("#continue")
+                    logger.debug("OTP submitted")
+                except Exception as otp_err:
+                    logger.warning(f"OTP handling failed or not required: {otp_err}")
+
             # Wait for the page to redirect
             await asyncio.wait_for(self._is_login_success_signal.get(), timeout=60)
             logger.success("Login success")
@@ -109,6 +133,10 @@ class EpicAuthorization:
             sr = SCREENSHOTS_DIR.joinpath("authorization")
             sr.mkdir(parents=True, exist_ok=True)
             await self.page.screenshot(path=sr.joinpath(f"login-{int(time.time())}.png"))
+            
+            # Send Telegram notification for login failure
+            telegram_notifier.notify_login_failed(settings.EPIC_EMAIL, str(err))
+            
             return None
 
     async def invoke(self):
