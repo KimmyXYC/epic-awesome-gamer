@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "epic-awesome-gamer"
 version = "0.4.1"
@@ -7,7 +11,7 @@ dependencies = [
     "celery[redis]>=5.4.0",
     "hcaptcha-challenger[camoufox]>=0.18.10",
     "pyotp>=2.9.0",
-    "httpx>=0.27.0",
+    "httpx[socks]>=0.28.1",
 ]
 requires-python = ">=3.12,<=3.13"
 authors = [
@@ -38,6 +42,10 @@ Documentation = "https://github.com/QIN2DIM/epic-awesome-gamer"
 Repository = "https://github.com/QIN2DIM/epic-awesome-gamer.git"
 Issues = "https://github.com/QIN2DIM/epic-awesome-gamer/issues"
 Changelog = "https://github.com/QIN2DIM/epic-awesome-gamer/blob/master/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["tests*", "scripts*", "docker*", "docs*"]
 
 [tool.black]
 line-length = 100
