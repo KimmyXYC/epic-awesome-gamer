@@ -361,12 +361,18 @@ class EpicGames:
             # --> Move to webPurchaseContainer iframe
             logger.debug("Move to webPurchaseContainer iframe")
             wpc, payment_btn = await self._active_purchase_container(self.page)
+            logger.debug(f"webPurchaseContainer result: wpc={wpc}, payment_btn={payment_btn}")
             logger.debug("Click payment button")
             # <-- Handle UK confirm-order
             await self._uk_confirm_order(wpc)
 
             # {{< Active >}}
-            await agent.wait_for_challenge()
+            logger.debug("Attempting to solve hCaptcha challenge")
+            try:
+                await agent.wait_for_challenge()
+                logger.debug("hCaptcha challenge solved successfully")
+            except Exception as captcha_err:
+                logger.debug(f"No captcha challenge or captcha handling skipped: {captcha_err}")
         except Exception as err:
             logger.warning(f"Failed to solve captcha - {err}")
             await self.page.reload()

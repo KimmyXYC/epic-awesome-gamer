@@ -133,9 +133,6 @@ class EpicAuthorization:
                         logger.debug(f"OTP digit {i} inputted: {digit}")
                     
                     logger.debug("All OTP digits inputted")
-
-                    # 等待2秒让页面处理
-                    await asyncio.sleep(2)
                     
                     # 点击继续按钮
                     await self.page.click("#continue")
@@ -143,9 +140,12 @@ class EpicAuthorization:
                 except Exception as otp_err:
                     logger.warning(f"OTP handling failed or not required: {otp_err}")
 
-            # Active hCaptcha challenge
-            await agent.wait_for_challenge()
-            logger.debug("hCaptcha challenge solved")
+            # Active hCaptcha challenge (if present)
+            try:
+                await agent.wait_for_challenge()
+                logger.debug("hCaptcha challenge solved")
+            except Exception as captcha_err:
+                logger.debug(f"No captcha challenge or captcha handling skipped: {captcha_err}")
 
             # Wait for the page to redirect
             await asyncio.wait_for(self._is_login_success_signal.get(), timeout=60)
